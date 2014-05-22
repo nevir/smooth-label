@@ -1,0 +1,18 @@
+{
+  "name": "smooth-label",
+  "private": true,
+  "dependencies": {
+    "polymer": "Polymer/polymer#master"
+  },
+  "homepage": "https://github.com/nevir/smooth-label",
+  "_release": "f819c5ec55",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "f819c5ec5514f333fdb2e1fff8b38bf2707da03d"
+  },
+  "_source": "git://github.com/nevir/smooth-label.git",
+  "_target": "master",
+  "_originalSource": "nevir/smooth-label",
+  "_direct": true
+}
