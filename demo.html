@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <title>&lt;smooth-label&gt;</title>
+  <script src="../platform/platform.js"></script>
+
+  <link href="smooth-label.html" rel="import">
+
+  <script>
+    var delay = 2500;
+    var simpleValues = [
+      '<span>The quick brown</span> fox jumps over the lazy dog',
+      '<span>The quick brown</span> dog jumps over the lazy fox',
+      '<span>The quick brown</span> dog sleeps in a kennel',
+      'A sneaky cat annoys the sleeping dog',
+      'The quick brown fox also annoys the sleeping dog'
+    ];
+    var multilineValues = [
+      'One line of text',
+      'One line of text<br/>And another...',
+      'One line of text<br/>And another...<div>And a third</div>',
+      'One line of text<div>And a third</div>',
+      '<div>And a third</div>'
+    ];
+    var indexes = {};
+
+    function rotate(elementId, values) {
+      var label = document.getElementById(elementId);
+      var index = indexes[elementId] || 0;
+
+      label.innerHTML = values[index];
+      indexes[elementId] = (index + 1) % values.length;
+
+      deferRotation(elementId, values);
+    }
+
+    function deferRotation(elementId, values) {
+      setTimeout(rotate.bind(null, elementId, values), delay);
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial;
+      font-size: 14px;
+      margin: 0 auto;
+      width: 400px;
+    }
+
+    article {
+      background: #f7f7f7;
+      border-radius: 3px;
+      padding: 8px;
+    }
+
+    header {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 1.5em 0;
+      text-align: center;
+    }
+
+    section {
+      background: white;
+      border-radius: 2px;
+      box-shadow: 0px 2px 5px #999;
+      display: inline-block;
+      margin: 8px;
+      padding: 8px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    /* Ensure that we are preserving parent styling. */
+    span {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body unresolved>
+  <header>&lt;smooth-label&gt;</header>
+
+  <article>
+    <section>
+      <smooth-label>static label value</smooth-label>
+    </section><br/>
+
+    <section>
+      <smooth-label id="initially-blank"></smooth-label>
+      <script>deferRotation('initially-blank', simpleValues);</script>
+    </section><br/>
+
+    <section>
+      <p>Smushed between other nodes:</p>
+      &ldquo;<smooth-label id="rotating-smushed"><span>The quick brown</span> fox wonders what it says</smooth-label>&rdquo;
+      <script>deferRotation('rotating-smushed', simpleValues);</script>
+      <p>smushed!</p>
+    </section><br/>
+    <section>
+      <smooth-label id="rotating"><span>The quick brown</span> fox wonders what it says</smooth-label>
+      <script>deferRotation('rotating', simpleValues);</script>
+    </section><br/>
+
+    <section>
+      <smooth-label id="vertical">Initial line of text</smooth-label>
+      <script>deferRotation('vertical', multilineValues);</script>
+    </section>
+  </article>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+:host {
+  display: inline-block;
+  overflow: hidden;
+  position: relative;
+  text-align: left;
+  transition: height .28s ease-out, width .28s ease-out;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+#content, #snapshot {
+  display: inline-block;
+  transition: opacity .28s ease-out;
+}
+:host(.swapping) #content, :host(.swapping) #snapshot {
+  transition: none;
+}
+
+#content {
+  opacity: 1;
+}
+#snapshot {
+  opacity: 0;
+  pointer-events: none;
+  /* Note that #snapshot _must_ come before #content in the DOM for this! */
+  position: absolute;
+}
+
+:host(.swapping) #content {
+  opacity: 0;
+}
+:host(.swapping) #snapshot {
+  opacity: 1;
+}

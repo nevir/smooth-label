@@ -1,0 +1,196 @@
+<!--
+smooth-label is a label-like container that smoothly transitions changes to
+its child nodes.
+
+##### Example
+
+    <smooth-label id="label">I have things to say</smooth-label>
+
+It will smoothly tween to new content that you provide for it:
+
+    // 'things to say' fades out while 'nothing to say' fades in.
+    this.$.label.textContent = "I have nothing to say";
+
+The label can contain text and any other nodes, and will do its best to
+transition changes in them.
+
+@element smooth-label
+@homepage https://nevir.github.io/smooth-label
+-->
+<link href="../polymer/polymer.html" rel="import">
+
+<polymer-element name="smooth-label" constructor="SmoothLabel">
+
+  <template>
+    <link href="smooth-label.css" rel="stylesheet">
+    <div id="snapshot"></div>
+    <div id="content"><content id="distributedContent"></content></div>
+  </template>
+
+  <script>
+  (function() {
+    // Ideally, this is a separate element/library, but for now...
+    var Util = {};
+    var currentUniqueId = 0;
+
+    /**
+     * @return {number} A globally unique id to use in your nefarious algorithms.
+     */
+    Util.uniqueId = function() {
+      currentUniqueId += 1;
+      return currentUniqueId;
+    }
+
+    /**
+     * Wraps a function to ensure that it can only be called at most once per
+     * frame.
+     *
+     * This is safe to use for member or global methods: It will debounce for each
+     * _this_ object.
+     *
+     * @template CallbackType
+     * @param {CallbackType} callback
+     * @param {function(...*):bool} opt_filter Only evaluates calls where true.
+     * @return {CallbackType}
+     */
+    Util.oncePerFrame = function(callback, opt_filter) {
+      // We persist a value on the this object, so that the wrapped function
+      // debounces _per_ instance.
+      var trackerKey = "_gootil_frameDebounced_" + Util.uniqueId();
+      return function() {
+        if (opt_filter && !opt_filter.apply(this, arguments)) return;
+        if (this[trackerKey]) return;
+
+        this[trackerKey] = true;
+        requestAnimationFrame((function() {
+          this[trackerKey] = false;
+        }).bind(this));
+
+        return callback.apply(this, arguments);
+      };
+    };
+
+    // The actual element.
+
+    /**
+     * A smooth-label element tweens between snapshots of previous state and
+     * its currently distributed content.
+     *
+     * This requires that we are careful about the lifecycle around content
+     * mutations:
+     *
+     *  * Whenever the content changes, the old snapshot is made visible, while
+     *    new content is made invisible (The 'swapping' class is added).
+     *
+     *  * Once we are sure that the snapshot is visible, the 'swapping' class is
+     *    removed so that the opacity can transition back to steady state.
+     *
+     *  * Upon transition completion; a new snapshot is made.
+     */
+    Polymer({
+      /**
+       * Fired when the label has finished transitioning to new content.
+       *
+       * @event label-transitioned
+       */
+
+      ready: function() {
+        this._observer = new MutationObserver(this._contentChanged.bind(this));
+        this._observer.observe(
+            this, {childList:true, subtree: true, characterData: true});
+
+        this.addEventListener('transitionend', this._onTransitionEnd.bind(this));
+      },
+
+      domReady: function() {
+        this._snapshotContent();
+        this._updateBounds();
+      },
+
+      // We assume that all transitions end at the same time; so we are free to
+      // clean up at the end of any transitionend event.
+      _onTransitionEnd: Util.oncePerFrame(function(event) {
+        event.stopPropagation();
+        this.fire('label-transitioned');
+        this._snapshotContent();
+      }),
+
+      _contentChanged: Util.oncePerFrame(function() {
+        this.classList.add('swapping');
+
+        // Why requestAnimationFrame 2x? An excellent question, my dear Watson!
+        //
+        // Calling it once tends to land us into the *current* paint. We want to
+        // guarantee that the swapping class is enabled for at least one entire
+        // frame, so we call requestAnimationFrames once more to ensure that.
+        requestAnimationFrame((function() {
+          requestAnimationFrame((function() {
+            this.classList.remove('swapping');
+            this._updateBounds();
+          }).bind(this));
+        }).bind(this));
+      }),
+
+      /**
+       * Sets the height & width of this node, so that we properly animate when
+       * the size of our content changes.
+       */
+      _updateBounds: function() {
+        this.style.width = this.$.content.offsetWidth + 'px';
+        // Most labels are oriented horizontally ('cause written text), and we
+        // want to avoid animating both height and width together.
+        var offsetHeight = this.$.content.offsetHeight;
+        if (offsetHeight > 0) {
+          this.style.height = offsetHeight + 'px';
+        }
+      },
+
+      /**
+       * Creates a deep copy of our distributed content nodes, and their styles.
+       *
+       * This should be called whenever new content is provided, but *after*
+       * the current snapshot has been transitioned away.
+       */
+      _snapshotContent: function() {
+        while (this.$.snapshot.firstChild) {
+          this.$.snapshot.removeChild(this.$.snapshot.firstChild);
+        }
+
+        var contentNodes = this.$.distributedContent.getDistributedNodes()
+        for (var i = 0; i < contentNodes.length; i++) {
+          this.$.snapshot.appendChild(this._snapshotNode(contentNodes[i]));
+        }
+      },
+
+      /**
+       * Creates a deep clone of node where all style on node is also preserved.
+       *
+       * Since we are moving nodes from the parent document into our shadow DOM,
+       * we have to be careful to preserve any styling present in the parent.
+       *
+       * TODO(nevir): Is there a better way to snapshot the distributed content
+       * for insertion into the shadow dom (while still preserving styles from
+       * the parent doc)?
+       */
+      _snapshotNode: function(node) {
+        var clone = node.cloneNode(false);
+
+        var computedStyle = getComputedStyle(node);
+        if (computedStyle) {
+          for (var i = 0; i < computedStyle.length; i++) {
+            var property = computedStyle[i];
+            clone.style[property] = computedStyle[property];
+          }
+        }
+
+        for (var i = 0; i < node.childNodes.length; i++) {
+          clone.appendChild(this._snapshotNode(node.childNodes[i]));
+        }
+
+        return clone;
+      }
+    });
+  })();
+  </script>
+
+</polymer-element>
