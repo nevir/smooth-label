@@ -56,7 +56,7 @@ transition changes in them.
     Util.oncePerFrame = function(callback, opt_filter) {
       // We persist a value on the this object, so that the wrapped function
       // debounces _per_ instance.
-      var trackerKey = "_gootil_frameDebounced_" + Util.uniqueId();
+      var trackerKey = "_util_frameDebounced_" + Util.uniqueId();
       return function() {
         if (opt_filter && !opt_filter.apply(this, arguments)) return;
         if (this[trackerKey]) return;
